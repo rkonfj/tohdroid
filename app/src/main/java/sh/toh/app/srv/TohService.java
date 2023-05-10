@@ -34,7 +34,7 @@ public class TohService extends Service {
         try {
             Os.setenv("HOME", getFilesDir().getPath(), false);
             tohSocks5 = Runtime.getRuntime().exec(getApplicationInfo().nativeLibraryDir
-                    + "/libtoh.so s5 --dns 8.8.8.8 --dns-fake 10.88.77.2");
+                    + "/libtoh.so s5 --dns 8.8.8.8 --dns-fake 10.88.77.3");
             log.show("toh", tohSocks5,true);
             executors.submit(() -> {
                 while (true) {
