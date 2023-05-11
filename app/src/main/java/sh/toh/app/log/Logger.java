@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import sh.toh.app.R;
 import sh.toh.app.msg.Broadcaster;
 import sh.toh.app.msg.MessageBus;
 
@@ -61,7 +62,7 @@ public class Logger extends MessageBus {
     }
 
     public void show(String tag, String log) {
-        pub("log", String.format("[%s] %s", tag, log));
+        pub(R.string.log, String.format("[%s] %s", tag, log));
     }
 
     public void show(String tag, Exception e) {

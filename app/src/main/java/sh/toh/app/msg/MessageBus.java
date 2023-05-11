@@ -2,22 +2,22 @@ package sh.toh.app.msg;
 
 import android.content.Intent;
 
-public abstract class MessageBus {
-    private Broadcaster broadcaster;
-    public static final String packageName = "sh.toh.app";
+public class MessageBus {
+    private final Broadcaster broadcaster;
+    public static final String PACKAGE_NAME = "sh.toh.app";
 
     public MessageBus(Broadcaster broadcaster) {
         this.broadcaster = broadcaster;
     }
 
-    public void pub(String action, String data) {
-        Intent i = new Intent(packageName + ".msgBus");
+    public void pub(int action, String data) {
+        Intent i = new Intent(PACKAGE_NAME + ".msgBus");
         i.putExtra("action", action);
         i.putExtra("data", data);
         broadcaster.sendBroadcast(i);
     }
 
-    public void pub(String action) {
+    public void pub(int action) {
         pub(action, null);
     }
 }

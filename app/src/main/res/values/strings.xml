@@ -3,4 +3,10 @@
     <string name="connect">Connect</string>
     <string name="connecting">Connecting</string>
     <string name="connected">Connected</string>
+    <string name="scanQR">Scan QR</string>
+
+    <string name="tohStopped">tohStopped</string>
+    <string name="tohStarted">tohStarted</string>
+    <string name="log">log</string>
+    <string name="stopVpn">stopVpn</string>
 </resources>

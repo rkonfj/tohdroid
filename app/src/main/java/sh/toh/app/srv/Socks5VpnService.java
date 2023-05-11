@@ -9,16 +9,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import engine.Engine;
+import sh.toh.app.R;
 import sh.toh.app.log.Logger;
-import sh.toh.app.msg.ServiceUserEventListener;
+import sh.toh.app.msg.EventListener;
 
 public class Socks5VpnService extends VpnService {
-
     private final Logger log = new Logger(this::sendBroadcast);
     private final ExecutorService executors = Executors.newFixedThreadPool(1);
-    private final ServiceUserEventListener eventListener = new ServiceUserEventListener() {
-        @Override
-        public void onStopEvent() {
+    private final EventListener eventListener = new EventListener();
+    private ParcelFileDescriptor tun;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        eventListener.register(this);
+        eventListener.subscribe(R.string.stopVpn, data -> {
             if (tun != null) {
                 try {
                     tun.close();
@@ -26,14 +31,7 @@ public class Socks5VpnService extends VpnService {
                     log.show("tun2socks", e);
                 }
             }
-        }
-    };
-    private ParcelFileDescriptor tun;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        eventListener.register(this);
+        });
 
         try {
             Builder builder = new Builder()
@@ -58,10 +56,9 @@ public class Socks5VpnService extends VpnService {
         key.setTCPSendBufferSize("");
         key.setTCPReceiveBufferSize("");
         key.setTCPModerateReceiveBuffer(false);
-
         engine.Engine.insert(key);
-        executors.submit(Engine::start);
 
+        executors.submit(Engine::start);
     }
 
     @Override

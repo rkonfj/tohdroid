@@ -1,7 +1,11 @@
 package sh.toh.app;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
+
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.UrlQuerySanitizer;
 import android.net.VpnService;
 import android.os.Bundle;
 import android.view.View;
@@ -14,15 +18,33 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import sh.toh.app.msg.EventListener;
 import sh.toh.app.msg.MessageBus;
-import sh.toh.app.msg.UIUpdateEventListener;
 import sh.toh.app.srv.Socks5VpnService;
 import sh.toh.app.srv.TohService;
 
 public class MainActivity extends AppCompatActivity {
-    private final MessageBus msgBus = new MessageBus(this::sendBroadcast) {
-    };
+    private final MessageBus msgBus = new MessageBus(this::sendBroadcast);
+
+    private final EventListener eventListener = new EventListener();
+
+    private final ExecutorService executors = Executors.newFixedThreadPool(2);
+
+    private final OkHttpClient httpClient = new OkHttpClient.Builder()
+            .followRedirects(true).build();
 
     private TextView logView;
 
@@ -32,36 +54,19 @@ public class MainActivity extends AppCompatActivity {
 
     private Intent vpnService;
 
-    private ActivityResultLauncher<Intent> vpnPermissionGranter;
-
-    UIUpdateEventListener broadcastReceiver = new UIUpdateEventListener() {
-
-        @Override
-        public void onLog(String log) {
-            logView.append(log);
-        }
-
-        @Override
-        public void onTohSocks5Started() {
-            connectButton.setText(R.string.connected);
-        }
-
-        @Override
-        public void onTohSocks5Stopped() {
-            connectButton.setText(R.string.connect);
-        }
-    };
+    private ActivityResultLauncher<Intent> vpnLauncher;
+    private ActivityResultLauncher<ScanOptions> scanLauncher;
 
     @Override
     protected void onResume() {
         super.onResume();
-        broadcastReceiver.register(this);
+        eventListener.register(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        broadcastReceiver.unregister(this);
+        eventListener.unregister(this);
     }
 
     @Override
@@ -73,15 +78,83 @@ public class MainActivity extends AppCompatActivity {
         logView = findViewById(R.id.logView);
         connectButton = findViewById(R.id.button);
         connectButton.setOnClickListener(this::connect);
+        connectButton.setOnLongClickListener(this::showScanQRButton);
         tohService = new Intent(this, TohService.class);
         vpnService = new Intent(this, Socks5VpnService.class);
-        vpnPermissionGranter = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+
+        findViewById(R.id.scanQR).setOnLongClickListener(this::hideScanQRButton);
+        findViewById(R.id.scanQR).setOnClickListener(this::scanQR);
+
+        preparePermission();
+        registerEventListener();
+    }
+
+    private void preparePermission() {
+        vpnLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() != RESULT_OK) {
                 Snackbar.make(findViewById(R.id.logContainer), "Permission not granted!", BaseTransientBottomBar.LENGTH_LONG).show();
                 return;
             }
             startVpnService();
         });
+
+        scanLauncher = registerForActivityResult(new ScanContract(), result -> {
+            hideScanQRButton(findViewById(R.id.scanQR));
+            if (result.getContents() != null) {
+                downloadConfig(result.getContents());
+            }
+        });
+
+    }
+
+    private void downloadConfig(String qrCode) {
+        UrlQuerySanitizer sanitizer = new UrlQuerySanitizer(qrCode);
+        if (!sanitizer.hasParameter("key")) {
+            Snackbar.make(findViewById(R.id.buttonLayout), "invalid format", BaseTransientBottomBar.LENGTH_LONG).show();
+            return;
+        }
+        String key = sanitizer.getValue("key");
+        String host = "toh.sh";
+        if (sanitizer.hasParameter("host")) {
+            host = sanitizer.getValue("host");
+        }
+        String url = String.format("https://%s/s5/%s", host, key);
+        Snackbar.make(findViewById(R.id.buttonLayout), "downloading toh-s5 config", BaseTransientBottomBar.LENGTH_LONG).show();
+        connectButton.setEnabled(false);
+        executors.submit(() -> {
+            try (Response resp = httpClient.newCall(new Request.Builder().url(url).get().build()).execute()) {
+                File tohRootPath = Paths.get(getFilesDir().getPath(), ".config", "toh").toFile();
+                if (!tohRootPath.exists()) {
+                    boolean ret = tohRootPath.mkdirs();
+                    if (!ret) {
+                        runOnUiThread(() -> tips("can not create " + tohRootPath.getPath()));
+                        return;
+                    }
+                }
+                if (resp.body() == null) {
+                    runOnUiThread(() -> tips("download error"));
+                    return;
+                }
+                byte[] config = resp.body().bytes();
+                Files.write(Paths.get(getFilesDir().getPath(), ".config", "toh", "socks5.yml"), config);
+                runOnUiThread(() -> tips("downloaded"));
+            } catch (IOException e) {
+                runOnUiThread(() -> tips(e.getMessage()));
+            } finally {
+                runOnUiThread(() -> connectButton.setEnabled(true));
+            }
+        });
+    }
+
+    private void tips(String tips) {
+        Snackbar.make(findViewById(R.id.buttonLayout), tips, BaseTransientBottomBar.LENGTH_LONG).show();
+    }
+
+    private void registerEventListener() {
+        eventListener.subscribe(R.string.log, log -> logView.append(log + "\n"));
+        eventListener.subscribe(R.string.tohStarted, ignored -> connectButton.setText(R.string.connected));
+        eventListener.subscribe(R.string.tohStopped, ignored -> disconnect(null));
+
     }
 
     private void connect(View v) {
@@ -91,17 +164,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void disconnect(View v) {
+        msgBus.pub(R.string.stopVpn);
         stopService(vpnService);
         stopService(tohService);
-        msgBus.pub("stopVpn");
         connectButton.setText(R.string.connect);
         connectButton.setOnClickListener(this::connect);
+    }
+
+    private boolean showScanQRButton(View v) {
+        findViewById(R.id.scanQR).setVisibility(VISIBLE);
+        return true;
+    }
+
+    private boolean hideScanQRButton(View v) {
+        findViewById(R.id.scanQR).setVisibility(GONE);
+        Snackbar.make(findViewById(R.id.buttonLayout), "scan QR canceled", BaseTransientBottomBar.LENGTH_LONG).show();
+        return true;
+    }
+
+    private void scanQR(View v) {
+        scanLauncher.launch(new ScanOptions()
+                .setPrompt("Scan a ToH QR Code")
+                .setBeepEnabled(false)
+                .setBarcodeImageEnabled(true));
     }
 
     private void startVpnService() {
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
-            vpnPermissionGranter.launch(intent);
+            vpnLauncher.launch(intent);
             Snackbar.make(findViewById(R.id.logContainer), "Please grant permission", BaseTransientBottomBar.LENGTH_LONG).show();
         } else {
             startService(vpnService);

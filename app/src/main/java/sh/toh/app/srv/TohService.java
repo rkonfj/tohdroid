@@ -15,20 +15,21 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import sh.toh.app.R;
 import sh.toh.app.log.Logger;
 import sh.toh.app.msg.MessageBus;
 
 public class TohService extends Service {
-
     private final Logger log = new Logger(this::sendBroadcast);
+
+    private final OkHttpClient httpClient = new OkHttpClient.Builder()
+            .followRedirects(true).build();
+
+    private final ExecutorService executors = Executors.newFixedThreadPool(2);
+
+    private final MessageBus msgBus = new MessageBus(this::sendBroadcast);
+
     private Process tohSocks5;
-
-    private final OkHttpClient httpClient = new OkHttpClient();
-
-    private final ExecutorService executors = Executors.newFixedThreadPool(1);
-
-    private final MessageBus msgBus = new MessageBus(this::sendBroadcast) {
-    };
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -49,12 +50,28 @@ public class TohService extends Service {
                             .url("http://127.0.0.1:2080")
                             .get()
                             .build()).execute()) {
-                        msgBus.pub("tohStarted");
+                        msgBus.pub(R.string.tohStarted);
                         break;
                     } catch (IOException ignored) {
                     }
                 }
             });
+
+            executors.submit(() -> {
+                while (true) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        log.show("toh", e);
+                        Thread.currentThread().interrupt();
+                    }
+                    if (!tohSocks5.isAlive()) {
+                        msgBus.pub(R.string.tohStopped);
+                        break;
+                    }
+                }
+            });
+
         } catch (Exception e) {
             log.show("toh", e);
         }
