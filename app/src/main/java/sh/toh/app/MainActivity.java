@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
     private void preparePermission() {
         vpnLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() != RESULT_OK) {
-                Snackbar.make(findViewById(R.id.logContainer), "Permission not granted!", BaseTransientBottomBar.LENGTH_LONG).show();
+                Snackbar.make(findViewById(R.id.logContainer), "permission not granted", BaseTransientBottomBar.LENGTH_LONG).show();
                 return;
             }
             startVpnService();
@@ -172,9 +172,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void connect(View v) {
         startVpnService();
-        connectButton.setText(R.string.connecting);
-        connectButton.setOnClickListener(this::disconnect);
-        showLogComponent();
     }
 
     private int clickCount;
@@ -265,10 +262,12 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
             vpnLauncher.launch(intent);
-            Snackbar.make(findViewById(R.id.logContainer), "Please grant permission", BaseTransientBottomBar.LENGTH_LONG).show();
         } else {
+            connectButton.setText(R.string.connecting);
             startService(vpnService);
             startService(tohService);
+            showLogComponent();
+            connectButton.setOnClickListener(this::disconnect);
         }
     }
 }
