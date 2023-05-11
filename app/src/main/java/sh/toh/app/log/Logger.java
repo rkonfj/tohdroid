@@ -10,9 +10,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import sh.toh.app.msg.Broadcaster;
-import sh.toh.app.msg.BroadcasterWrapper;
+import sh.toh.app.msg.MessageBus;
 
-public class Logger extends BroadcasterWrapper {
+public class Logger extends MessageBus {
 
     private final ExecutorService executors = Executors.newFixedThreadPool(4);
 

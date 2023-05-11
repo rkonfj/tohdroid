@@ -10,12 +10,13 @@ import androidx.annotation.Nullable;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import sh.toh.app.log.Logger;
-import sh.toh.app.msg.BroadcasterWrapper;
+import sh.toh.app.msg.MessageBus;
 
 public class TohService extends Service {
 
@@ -26,7 +27,7 @@ public class TohService extends Service {
 
     private final ExecutorService executors = Executors.newFixedThreadPool(1);
 
-    private final BroadcasterWrapper msgBus = new BroadcasterWrapper(this::sendBroadcast) {
+    private final MessageBus msgBus = new MessageBus(this::sendBroadcast) {
     };
 
     @Override
@@ -35,16 +36,20 @@ public class TohService extends Service {
             Os.setenv("HOME", getFilesDir().getPath(), false);
             tohSocks5 = Runtime.getRuntime().exec(getApplicationInfo().nativeLibraryDir
                     + "/libtoh.so s5 --dns 8.8.8.8 --dns-fake 10.88.77.3");
-            log.show("toh", tohSocks5,true);
+            log.show("toh", tohSocks5, true);
             executors.submit(() -> {
                 while (true) {
                     try {
-                        Thread.sleep(500);
+                        TimeUnit.MILLISECONDS.sleep(500);
                     } catch (InterruptedException e) {
                         log.show("toh", e);
+                        Thread.currentThread().interrupt();
                     }
-                    try (Response ignored = httpClient.newCall(new Request.Builder().url("http://127.0.0.1:2080").get().build()).execute()) {
-                        msgBus.pub("tohStarted", null);
+                    try (Response ignored = httpClient.newCall(new Request.Builder()
+                            .url("http://127.0.0.1:2080")
+                            .get()
+                            .build()).execute()) {
+                        msgBus.pub("tohStarted");
                         break;
                     } catch (IOException ignored) {
                     }

@@ -1,15 +1,12 @@
 package sh.toh.app.msg;
 
 import android.content.Intent;
-import android.os.Build;
 
-import sh.toh.app.log.Getter;
-
-public abstract class BroadcasterWrapper {
+public abstract class MessageBus {
     private Broadcaster broadcaster;
     public static final String packageName = "sh.toh.app";
 
-    public BroadcasterWrapper(Broadcaster broadcaster) {
+    public MessageBus(Broadcaster broadcaster) {
         this.broadcaster = broadcaster;
     }
 
@@ -18,5 +15,9 @@ public abstract class BroadcasterWrapper {
         i.putExtra("action", action);
         i.putExtra("data", data);
         broadcaster.sendBroadcast(i);
+    }
+
+    public void pub(String action) {
+        pub(action, null);
     }
 }
