@@ -23,16 +23,18 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingTop="60dp"
-            android:paddingBottom="50dp"
+            android:paddingTop="30dp"
+            android:paddingBottom="20dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <Button
                 android:id="@+id/button"
-                android:layout_width="130dp"
-                android:layout_height="136dp"
+                android:layout_width="140dp"
+                android:layout_height="146dp"
+                android:backgroundTint="#212121"
+                android:textSize="16sp"
                 android:text="@string/connect"
                 app:fontWeight="700" />
 
@@ -67,6 +69,8 @@
 
                 <TextView
                     android:id="@+id/logView"
+                    android:textSize="11sp"
+                    android:textColor="#666"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
             </ScrollView>

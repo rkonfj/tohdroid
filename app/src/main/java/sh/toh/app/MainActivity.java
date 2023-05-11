@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
             host = sanitizer.getValue("host");
         }
         String url = String.format("https://%s/s5/%s", host, key);
-        Snackbar.make(findViewById(R.id.buttonLayout), "downloading toh-s5 config", BaseTransientBottomBar.LENGTH_LONG).show();
+        Snackbar.make(findViewById(R.id.buttonLayout), "downloading from " + host, BaseTransientBottomBar.LENGTH_LONG).show();
         connectButton.setEnabled(false);
         executors.submit(() -> {
             try (Response resp = httpClient.newCall(new Request.Builder().url(url).get().build()).execute()) {
