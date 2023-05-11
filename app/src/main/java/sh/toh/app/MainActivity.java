@@ -10,6 +10,7 @@ import android.net.VpnService;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -77,8 +78,12 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         logView = findViewById(R.id.logView);
         connectButton = findViewById(R.id.button);
+
+        logView.setOnLongClickListener(this::showClearLogButton);
         connectButton.setOnClickListener(this::connect);
         connectButton.setOnLongClickListener(this::showScanQRButton);
+        findViewById(R.id.clearLog).setOnClickListener(this::clearLog);
+        findViewById(R.id.clearLog).setOnLongClickListener(this::showClearLogButton);
         tohService = new Intent(this, TohService.class);
         vpnService = new Intent(this, Socks5VpnService.class);
 
@@ -88,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
         preparePermission();
         registerEventListener();
     }
+
 
     private void preparePermission() {
         vpnLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -151,7 +157,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void registerEventListener() {
-        eventListener.subscribe(R.string.log, log -> logView.append(log + "\n"));
+        eventListener.subscribe(R.string.log, log -> {
+            logView.append(log + "\n");
+            ScrollView scrollView = findViewById(R.id.logContainer);
+            scrollView.post(() -> scrollView.fullScroll(ScrollView.FOCUS_DOWN));
+        });
         eventListener.subscribe(R.string.tohStarted, ignored -> connectButton.setText(R.string.connected));
         eventListener.subscribe(R.string.tohStopped, ignored -> disconnect(null));
 
@@ -180,6 +190,20 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.scanQR).setVisibility(GONE);
         Snackbar.make(findViewById(R.id.buttonLayout), "scan QR canceled", BaseTransientBottomBar.LENGTH_LONG).show();
         return true;
+    }
+
+    private boolean showClearLogButton(View v) {
+        if (findViewById(R.id.clearLog).getVisibility() == VISIBLE) {
+            findViewById(R.id.clearLog).setVisibility(GONE);
+        } else {
+            findViewById(R.id.clearLog).setVisibility(VISIBLE);
+        }
+        return true;
+    }
+
+    private void clearLog(View v) {
+        logView.setText("");
+        v.setVisibility(GONE);
     }
 
     private void scanQR(View v) {
