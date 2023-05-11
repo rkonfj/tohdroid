@@ -82,8 +82,11 @@ public class MainActivity extends AppCompatActivity {
         logView.setOnLongClickListener(this::showClearLogButton);
         connectButton.setOnClickListener(this::connect);
         connectButton.setOnLongClickListener(this::showScanQRButton);
+
         findViewById(R.id.clearLog).setOnClickListener(this::clearLog);
         findViewById(R.id.clearLog).setOnLongClickListener(this::showClearLogButton);
+        findViewById(R.id.overlayView).setOnClickListener(this::showLogComponent);
+
         tohService = new Intent(this, TohService.class);
         vpnService = new Intent(this, Socks5VpnService.class);
 
@@ -171,6 +174,50 @@ public class MainActivity extends AppCompatActivity {
         startVpnService();
         connectButton.setText(R.string.connecting);
         connectButton.setOnClickListener(this::disconnect);
+        showLogComponent();
+    }
+
+    private int clickCount;
+    private long lastClickTime;
+
+    private void showLogComponent(View v) {
+        if (lastClickTime > 0 && System.currentTimeMillis() - lastClickTime > 300) {
+            clickCount = 0;
+        }
+        clickCount++;
+        lastClickTime = System.currentTimeMillis();
+        if (clickCount == 2) {
+            showLogComponent();
+        }
+    }
+
+    private void showLogComponent() {
+        View logComponent = findViewById(R.id.logComponent);
+        View btnComponent = findViewById(R.id.buttonLayout);
+
+        int logComponentHeight = getResources().getDisplayMetrics().heightPixels - btnComponent.getHeight();
+
+        if (logComponent.getVisibility() == VISIBLE) {
+            logComponent.animate()
+                    .translationY(logComponentHeight)
+                    .setDuration(800)
+                    .withEndAction(() -> logComponent.setVisibility(GONE))
+                    .start();
+            btnComponent.animate().translationY((int) (logComponentHeight / 2))
+                    .setDuration(800)
+                    .withEndAction(() -> btnComponent.setTranslationY(0))
+                    .start();
+            return;
+        }
+        logComponent.setVisibility(VISIBLE);
+        System.out.println(logComponent.getHeight() + "------------");
+        logComponent.setTranslationY(logComponentHeight); // 将组件的 Y 轴偏移量设置为组件高度，使其位于底部
+        logComponent.animate()
+                .translationY(0) // 将组件的 Y 轴偏移量设置为 0，向上移动到原始位置
+                .setDuration(300) // 设置动画持续时间为 1000 毫秒
+                .start(); // 启动动画
+        btnComponent.setTranslationY((int) (logComponentHeight / 2));
+        btnComponent.animate().translationY(0).setDuration(300).start();
     }
 
     private void disconnect(View v) {
@@ -179,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
         stopService(tohService);
         connectButton.setText(R.string.connect);
         connectButton.setOnClickListener(this::connect);
+        showLogComponent();
     }
 
     private boolean showScanQRButton(View v) {
