@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -197,11 +198,11 @@ public class MainActivity extends AppCompatActivity {
         if (logComponent.getVisibility() == VISIBLE) {
             logComponent.animate()
                     .translationY(logComponentHeight)
-                    .setDuration(800)
+                    .setDuration(1500)
                     .withEndAction(() -> logComponent.setVisibility(GONE))
                     .start();
-            btnComponent.animate().translationY((int) (logComponentHeight / 2))
-                    .setDuration(800)
+            btnComponent.animate().translationY(logComponentHeight / 2F)
+                    .setDuration(1500)
                     .withEndAction(() -> btnComponent.setTranslationY(0))
                     .start();
             return;
@@ -212,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
                 .translationY(0) // 将组件的 Y 轴偏移量设置为 0，向上移动到原始位置
                 .setDuration(300) // 设置动画持续时间为 1000 毫秒
                 .start(); // 启动动画
-        btnComponent.setTranslationY((int) (logComponentHeight / 2));
+        btnComponent.setTranslationY(logComponentHeight / 2F);
         btnComponent.animate().translationY(0).setDuration(300).start();
     }
 
@@ -220,7 +221,19 @@ public class MainActivity extends AppCompatActivity {
         msgBus.pub(R.string.stopVpn);
         stopService(vpnService);
         stopService(tohService);
-        connectButton.setText(R.string.connect);
+        connectButton.setText(R.string.stopping);
+        connectButton.setEnabled(false);
+        executors.submit(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            runOnUiThread(() -> {
+                connectButton.setText(R.string.connect);
+                connectButton.setEnabled(true);
+            });
+        });
         connectButton.setOnClickListener(this::connect);
         showLogComponent();
     }

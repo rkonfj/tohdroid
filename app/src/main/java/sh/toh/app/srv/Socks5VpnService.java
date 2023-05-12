@@ -38,6 +38,7 @@ public class Socks5VpnService extends VpnService {
                     log.show("tun2socks", e);
                 }
             }
+            stopSelf();
         });
 
         try {

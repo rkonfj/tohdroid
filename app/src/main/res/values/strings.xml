@@ -2,6 +2,7 @@
     <string name="app_name">Tohdroid</string>
     <string name="connect">Connect</string>
     <string name="connecting">Connecting</string>
+    <string name="stopping">Stopping</string>
     <string name="connected">Connected</string>
     <string name="scanQR">Scan QR</string>
     <string name="clearLog">Clear Log</string>
