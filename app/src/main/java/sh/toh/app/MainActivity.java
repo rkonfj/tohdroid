@@ -207,7 +207,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         logComponent.setVisibility(VISIBLE);
-        System.out.println(logComponent.getHeight() + "------------");
         logComponent.setTranslationY(logComponentHeight); // 将组件的 Y 轴偏移量设置为组件高度，使其位于底部
         logComponent.animate()
                 .translationY(0) // 将组件的 Y 轴偏移量设置为 0，向上移动到原始位置
