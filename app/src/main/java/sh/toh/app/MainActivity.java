@@ -263,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
             vpnLauncher.launch(intent);
         } else {
             connectButton.setText(R.string.connecting);
-            startService(vpnService);
+            startForegroundService(vpnService);
             startService(tohService);
             showLogComponent();
             connectButton.setOnClickListener(this::disconnect);
