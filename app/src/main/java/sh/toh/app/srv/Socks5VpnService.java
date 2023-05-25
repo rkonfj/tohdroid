@@ -44,8 +44,10 @@ public class Socks5VpnService extends VpnService {
         try {
             Builder builder = new Builder()
                     .addAddress("10.88.77.2", 24)
+                    .addAddress("fd10:8877::2", 64)
                     .addDnsServer("10.88.77.3")
                     .addRoute("0.0.0.0", 0)
+                    .addRoute("::",0)
                     .addDisallowedApplication(this.getApplication().getPackageName());
             tun = builder.establish();
         } catch (PackageManager.NameNotFoundException e) {
@@ -58,7 +60,7 @@ public class Socks5VpnService extends VpnService {
         key.setMTU(0);
         key.setDevice("fd://" + tun.getFd());
         key.setInterface("");
-        key.setLogLevel("debug");
+        key.setLogLevel("info");
         key.setProxy("socks5://127.0.0.1:2080");
         key.setRestAPI("");
         key.setTCPSendBufferSize("");
