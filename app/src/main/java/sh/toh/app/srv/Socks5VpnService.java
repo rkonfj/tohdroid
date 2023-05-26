@@ -44,9 +44,9 @@ public class Socks5VpnService extends VpnService {
         try {
             Builder builder = new Builder()
                     .addAddress("10.88.77.2", 24)
-                    .addAddress("fd10:8877::2", 64)
                     .addDnsServer("10.88.77.3")
                     .addRoute("0.0.0.0", 0)
+                    .addAddress("fd10:8877::2", 64)
                     .addRoute("::",0)
                     .addDisallowedApplication(this.getApplication().getPackageName());
             tun = builder.establish();
